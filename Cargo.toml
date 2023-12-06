@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+counter = "0.5.7"
 regex = "1.10.2"
 regex-macro = "0.2.0"
