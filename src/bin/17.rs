@@ -6,10 +6,15 @@ fn main() {
     let input = read_to_string("data/17.txt").unwrap();
     let city = City::parse(&input);
     println!("Part 1: {}", solve_part_1(&city));
+    println!("Part 2: {}", solve_part_2(&city));
 }
 
 fn solve_part_1(city: &City) -> u32 {
-    city.find_route()
+    city.find_route(1, 3)
+}
+
+fn solve_part_2(city: &City) -> u32 {
+    city.find_route(4, 10)
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -50,6 +55,9 @@ impl Route {
 impl Ord for Route {
     fn cmp(&self, other: &Self) -> Ordering {
         other.heat_loss.cmp(&self.heat_loss)
+            .then(other.distance.cmp(&self.distance))
+            .then(self.block.cmp(&other.block))
+            .then((self.heading as u8).cmp(&(other.heading as u8)))
     }
 }
 
@@ -73,8 +81,7 @@ impl City {
         Self { blocks }
     }
 
-    fn find_route(&self) -> u32 {
-        let max_distance: u32 = 3;
+    fn find_route(&self, min_distance: u32, max_distance: u32) -> u32 {
         let from = (0, 0);
         let to = (self.blocks.len() - 1, self.blocks[0].len() - 1);
 
@@ -88,18 +95,19 @@ impl City {
             if heat_loss >= lowest_heat_loss || seen.get(&(block, heading, distance)).is_some_and(|&lowest_heat_loss| heat_loss >= lowest_heat_loss) {
                 continue;
             }
+
+            if block == to && distance > min_distance {
+                lowest_heat_loss = heat_loss;
+                continue;
+            }
+
             seen.insert((block, heading, distance), heat_loss);
 
             if let Some(next_block) = self.next(&block, &heading) {
                 let next_heat_loss = heat_loss + self.loss_at(&next_block);
-                if next_heat_loss >= lowest_heat_loss || seen.get(&(next_block, heading, distance)).is_some_and(|&prev_loss| next_heat_loss >= prev_loss) {
+                if next_heat_loss >= lowest_heat_loss {
                     continue;
                 }
-                if next_block == to {
-                    lowest_heat_loss = next_heat_loss;
-                    continue;
-                }
-
                 for next_heading in [Heading::Up, Heading::Down, Heading::Left, Heading::Right] {
                     if next_heading != heading.inverse() {
                         let mut next_distance = 1;
@@ -108,9 +116,10 @@ impl City {
                                 continue;
                             }
                             next_distance = distance + 1;
+                        } else if distance < min_distance {
+                            continue;
                         }
                         routes.push(Route::new(next_block, next_heading, next_distance, next_heat_loss));
-
                     }
                 }
             }
@@ -168,7 +177,7 @@ mod test {
             22221
             22221
         ");
-        assert_eq!(city.find_route(), 7);
+        assert_eq!(city.find_route(1, 3), 7);
     }
 
     #[test]
@@ -189,5 +198,37 @@ mod test {
             4322674655533
         ");
         assert_eq!(solve_part_1(&city), 102);
+    }
+
+    #[test]
+    fn test_find_route_ultra_crucible() {
+        let city = City::parse(r"
+            111111111111
+            999999999991
+            999999999991
+            999999999991
+            999999999991
+        ");
+        assert_eq!(city.find_route(4, 10), 71);
+    }
+
+    #[test]
+    fn test_solve_part_2() {
+        let city = City::parse(r"
+            2413432311323
+            3215453535623
+            3255245654254
+            3446585845452
+            4546657867536
+            1438598798454
+            4457876987766
+            3637877979653
+            4654967986887
+            4564679986453
+            1224686865563
+            2546548887735
+            4322674655533
+        ");
+        assert_eq!(solve_part_2(&city), 94);
     }
 }
