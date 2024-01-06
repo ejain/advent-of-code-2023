@@ -16,3 +16,9 @@ multimap = "0.9.1"
 indexmap = "2.1.0"
 nalgebra = "0.32.3"
 petgraph = "0.6.4"
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
